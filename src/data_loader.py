@@ -11,7 +11,7 @@ LOCAL_DATA_PATH = (
     PROJECT_ROOT / "data" / "road_traffic_accidents_zw.csv"
 )
 
-GITHUB_DATA_URL = "https://raw.githubusercontent.com/mcnallypp/zwaccidents/refs/heads/main/road_traffic_accidents_zw.csv"
+GITHUB_DATA_URL = "https://raw.githubusercontent.com/mcnallypp/zwaccidents/refs/heads/main/data/road_traffic_accidents_zw.csv"
 
 
 def load_data(source="local"):
