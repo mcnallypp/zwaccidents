@@ -48,7 +48,7 @@ div[data-testid="stMetricValue"] {
 
 @st.cache_data(ttl=300)
 def get_data():
-    return load_data(source="local")
+    return load_data(source="github")
 
 
 st.title("🚦 Zimbabwe Road Traffic Accident Analytics")
