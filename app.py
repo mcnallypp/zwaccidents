@@ -41,7 +41,6 @@ div[data-testid="stMetricValue"] {
 </style>
 """, unsafe_allow_html=True)
 
-
 # --------------------------------------------------
 # 2. LOAD DATA
 # --------------------------------------------------
@@ -246,7 +245,7 @@ else:
             },
             map_style="open-street-map",
             center={"lat": -19.0, "lon": 29.5},
-            zoom=5,
+            zoom=6,
             height=580,
             title="Reported Accident Locations"
         )
@@ -292,70 +291,44 @@ st.caption(
     "not truncate model training."
 )
 
-forecast_input = df[
-    df["Province"].astype(str).isin(selected_provinces)
-    & (df["Date"].dt.date <= end_date)
-].copy()
+forecast_col1, forecast_col2 = st.columns(2)
 
-if forecast_input.empty:
-    st.info("No historical data is available for this forecast.")
-else:
-    try:
-        forecast_df = forecast_accidents(
-            forecast_input,
-            horizon=forecast_horizon
-        )
+with forecast_col1:
+    forecast_horizon = st.selectbox(
+        "Forecast horizon (weeks)",
+        [4, 6, 8, 12],
+        index=2
+    )
 
-        forecast_fig = px.line(
-            forecast_df,
-            x="Week",
-            y="Accidents",
-            color="Type",
-            markers=True,
-            title="Weekly Recorded Accidents",
-            labels={
-                "Week": "Week ending",
-                "Accidents": "Accident reports",
-                "Type": "Series"
-            },
-            color_discrete_map={
-                "Historical": "#0D9488",
-                "Forecast": "#D97706"
-            }
-        )
+with forecast_col2:
+    selected_model = st.selectbox(
+        "Forecasting model",
+        ["Holt-Winters", "SARIMA", "Prophet"]
+    )
 
-        forecast_fig.update_layout(
-            hovermode="x unified",
-            height=430,
-            margin={"l": 10, "r": 10, "t": 55, "b": 10}
-        )
+model_mapping = {
+    "Holt-Winters": "holt_winters",
+    "SARIMA": "sarima",
+    "Prophet": "prophet"
+}
+forecast_df = forecast_accidents(
+    df,
+    horizon=forecast_horizon,
+    model=model_mapping[selected_model]
+)
 
-        st.plotly_chart(
-            forecast_fig,
-            use_container_width=True
-        )
+st.caption(f"Forecast generated using {selected_model}")
 
-        future_values = forecast_df.loc[
-            forecast_df["Type"] == "Forecast", "Accidents"
-        ]
+fig = px.line(
+    forecast_df,
+    x="Week",
+    y="Accidents",
+    color="Type",
+    markers=True,
+    title=f"Weekly Accident Forecast – {selected_model}"
+)
 
-        st.metric(
-            "Average forecast per week",
-            f"{future_values.mean():.1f}"
-        )
-
-        st.caption(
-            "Forecasts are experimental estimates of recorded "
-            "accident counts. Validate against held-out data "
-            "before using them for operational decisions."
-        )
-
-    except Exception as exc:
-        st.warning(
-            f"Forecast unavailable. Check data coverage and "
-            f"model requirements. Details: {exc}"
-        )
-
+st.plotly_chart(fig, use_container_width=True)
 
 # --------------------------------------------------
 # 7. ACCIDENTS BY PROVINCE
@@ -421,7 +394,54 @@ with right_col:
 
 
 # --------------------------------------------------
-# 8. FILTERED DATA TABLE AND DOWNLOAD
+# 8. ACCIDENTS BY TIME OF DAY
+# --------------------------------------------------
+
+st.divider()
+st.subheader("Time-of-Day Patterns")
+
+time_data = filtered.copy()
+time_data["Hour"] = pd.to_datetime(
+    time_data["Time"].astype(str),
+    format="%H:%M",
+    errors="coerce"
+).dt.hour
+
+valid_times = time_data.dropna(subset=["Hour"]).copy()
+
+if valid_times.empty:
+    st.info(
+        "Time-of-day analysis is unavailable because the Time "
+        "column does not contain values in HH:MM format."
+    )
+else:
+    valid_times["Hour"] = valid_times["Hour"].astype(int)
+
+    hourly_counts = (
+        valid_times.groupby("Hour")
+        .size()
+        .reindex(range(24), fill_value=0)
+        .rename("Accident reports")
+        .rename_axis("Hour")
+        .reset_index()
+    )
+
+    hourly_fig = px.bar(
+        hourly_counts,
+        x="Hour",
+        y="Accident reports",
+        title="Accident Reports by Hour of Day",
+        labels={"Hour": "Hour (24-hour clock)"}
+    )
+
+    st.plotly_chart(
+        hourly_fig,
+        use_container_width=True
+    )
+
+
+# --------------------------------------------------
+# 9. FILTERED DATA TABLE AND DOWNLOAD
 # --------------------------------------------------
 
 st.divider()
