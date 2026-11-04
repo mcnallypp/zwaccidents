@@ -9,3 +9,4 @@ openpyxl
 folium
 pmdarima
 matplotlib
+prophet
