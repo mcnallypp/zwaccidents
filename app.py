@@ -394,54 +394,7 @@ with right_col:
 
 
 # --------------------------------------------------
-# 8. ACCIDENTS BY TIME OF DAY
-# --------------------------------------------------
-
-st.divider()
-st.subheader("Time-of-Day Patterns")
-
-time_data = filtered.copy()
-time_data["Hour"] = pd.to_datetime(
-    time_data["Time"].astype(str),
-    format="%H:%M",
-    errors="coerce"
-).dt.hour
-
-valid_times = time_data.dropna(subset=["Hour"]).copy()
-
-if valid_times.empty:
-    st.info(
-        "Time-of-day analysis is unavailable because the Time "
-        "column does not contain values in HH:MM format."
-    )
-else:
-    valid_times["Hour"] = valid_times["Hour"].astype(int)
-
-    hourly_counts = (
-        valid_times.groupby("Hour")
-        .size()
-        .reindex(range(24), fill_value=0)
-        .rename("Accident reports")
-        .rename_axis("Hour")
-        .reset_index()
-    )
-
-    hourly_fig = px.bar(
-        hourly_counts,
-        x="Hour",
-        y="Accident reports",
-        title="Accident Reports by Hour of Day",
-        labels={"Hour": "Hour (24-hour clock)"}
-    )
-
-    st.plotly_chart(
-        hourly_fig,
-        use_container_width=True
-    )
-
-
-# --------------------------------------------------
-# 9. FILTERED DATA TABLE AND DOWNLOAD
+# 8. FILTERED DATA TABLE AND DOWNLOAD
 # --------------------------------------------------
 
 st.divider()
@@ -476,7 +429,7 @@ with st.expander("View and download filtered records"):
 
 
 # --------------------------------------------------
-# 10. FOOTER
+# 9. FOOTER
 # --------------------------------------------------
 
 st.divider()
